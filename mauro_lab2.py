@@ -1,5 +1,5 @@
 # %%markdown
-# Laboratorio 2: Armado de un esquema de aprendizaje automático
+## Laboratorio 2: Armado de un esquema de aprendizaje automático
 
 # %%
 import numpy as np
@@ -9,7 +9,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 # %%markdown
-## Carga de datos y división en entrenamiento y evaluación
+### Carga de datos y división en entrenamiento y evaluación
 
 La celda siguiente se encarga de la carga de datos (haciendo uso de pandas).
 Estos serán los que se trabajarán en el resto del laboratorio.
@@ -24,8 +24,10 @@ X, y = dataset.iloc[:, 1:], dataset.TARGET
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=0)
 
+RANDOM_STATE_SEED = 42
+
 # %%markdown
-## Ejercicio 1: Descripción de los Datos y la Tarea
+### Ejercicio 1: Descripción de los Datos y la Tarea
 
 Responder las siguientes preguntas:
 
@@ -35,7 +37,7 @@ Responder las siguientes preguntas:
 4. ¿Qué atributos imagina ud. que son los más determinantes para la predicción?
 
 # %%markdown
-### Respuestas:
+#### Respuestas:
 
 **1.** El dataset contiene información del desarrollo de 5960 prestamos
 inmobiliarios.
@@ -58,11 +60,11 @@ momento de hacerlo.
 - _CLNO_: Número de lineas de crédito
 - _DEBTINC_: El ratio de deuda a salario
 
-**4.** Imagino que _DELINQ_, _DEBTINC_ y _LOAN_ deben ser los que más afecten al
+**4.** Imagino que `DELINQ`, `DEBTINC` y `LOAN` deben ser los que más afecten al
 resultado.
 
 # %%markdown
-## Ejercicio 2: Predicción con Modelos Lineales
+### Ejercicio 2: Predicción con Modelos Lineales
 
 En este ejercicio se entrenarán modelos lineales de clasificación para predecir
  la variable objetivo.
@@ -94,12 +96,9 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 
-clf = SGDClassifier(random_state=42)
-clf.fit(X_train, y_train)
-
 clf = make_pipeline(
     StandardScaler(),
-    SGDClassifier(random_state=42)
+    SGDClassifier(random_state=RANDOM_STATE_SEED)
 )
 
 clf.fit(X_train, y_train)
@@ -160,7 +159,12 @@ Documentación:
 from sklearn.model_selection import GridSearchCV
 
 grid_values = {
-    'loss': ['perceptron', 'hinge', 'log']
+    'sgdclassifier__loss': ['perceptron', 'hinge', 'log'],
+    'sgdclassifier__penalty': ['l2', 'l1', 'elasticnet'],
+    'sgdclassifier__alpha': [0.0001, 0.001, 0.0005],
+    'sgdclassifier__learning_rate': [
+        'optimal', 'constant', 'invscaling', 'adaptive'],
+    'sgdclassifier__eta0': [1, 1.5, 2]
 }
 grid_clf_acc = GridSearchCV(
     clf,
@@ -211,10 +215,10 @@ Evaluar sobre el conjunto de **entrenamiento** y sobre el conjunto de
 # %%
 from sklearn.tree import DecisionTreeClassifier
 
-clf = DecisionTreeClassifier(random_state=42)
-clf.fit(X_train, y_train)
+clf_tree = DecisionTreeClassifier(random_state=42)
+clf_tree.fit(X_train, y_train)
 
-y_test_pred = clf.predict(X_test)
+y_test_pred = clf_tree.predict(X_test)
 
 # %%
 print('Accuracy Score : ' + str(accuracy_score(y_test, y_test_pred)))
@@ -257,3 +261,25 @@ de **entrenamiento** y sobre el conjunto de **evaluación**, reportando:
 Documentación:
 - https://scikit-learn.org/stable/modules/grid_search.html
 - https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
+
+# %%
+grid_values = {
+    'criterion': ['gini', 'entropy'],
+    'max_depth': [2, 5, 15, 30],
+    'min_samples_leaf': [1, 2, 3, 5],
+}
+grid_clf_acc = GridSearchCV(
+    clf_tree,
+    param_grid=grid_values,
+    scoring='recall'
+)
+grid_clf_acc.fit(X_train, y_train)
+
+#Predict values based on new parameters
+y_pred_acc = grid_clf_acc.predict(X_test)
+
+# New Model Evaluation metrics
+print('Accuracy Score : ' + str(accuracy_score(y_test,y_pred_acc)))
+print('Precision Score : ' + str(precision_score(y_test,y_pred_acc)))
+print('Recall Score : ' + str(recall_score(y_test,y_pred_acc)))
+print('F1 Score : ' + str(f1_score(y_test,y_pred_acc)))
